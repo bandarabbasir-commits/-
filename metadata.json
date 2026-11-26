@@ -1,0 +1,6 @@
+{
+  "name": "هرمزگان بیدار — نسخهٔ ۲",
+  "description": "سامانهٔ داخلی مدیریت، ارجاع و پیگیری پیام‌ها و مراجعات مردمی دفتر",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

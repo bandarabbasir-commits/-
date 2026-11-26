@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hormozgan_bidar
+      POSTGRES_USER: ${POSTGRES_USER:-hb_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_DB_PASS}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hb_admin} -d hormozgan_bidar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://hb_admin:CHANGE_ME_DB_PASS@db:5432/hormozgan_bidar}
+      DATABASE_ADMIN_URL: ${DATABASE_ADMIN_URL:-postgresql+asyncpg://hb_admin:CHANGE_ME_DB_PASS@db:5432/hormozgan_bidar}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://office.example.ir}
+      DEMO_SEED_ENABLED: "false"
+      ADMIN_INITIAL_USERNAME: ${ADMIN_INITIAL_USERNAME:-admin}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:
